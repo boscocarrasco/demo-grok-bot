@@ -1,1 +1,511 @@
-<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Archivo IA</title><body style="font-family:sans-serif;display:grid;place-items:center;min-height:100dvh;background:#E6E9EC;color:#12161C"><p>Preparando el juego. Recarga en un minuto.</p></body></html>
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#E6E9EC">
+<title>Archivo IA · Historia de la inteligencia artificial</title>
+<meta name="description" content="Juego de clase: 10 preguntas sobre la historia de la IA y ordena la línea del tiempo.">
+<link rel="preconnect" href="https://api.fontshare.com">
+<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@500,700,800&f[]=satoshi@400,500,700&display=swap">
+<script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.4/dist/confetti.browser.min.js"></script>
+<style>
+:root{
+  --archivo:#E6E9EC;   /* fondo, gris de archivador */
+  --ficha:#FBFBFA;     /* cartulina de la ficha */
+  --tinta:#12161C;     /* texto principal */
+  --grafito:#4A5361;   /* texto secundario */
+  --linea:#C9CED5;     /* bordes */
+  --sello:#2340D9;     /* acento: lo que se pulsa */
+  --sello-osc:#1A30A8;
+  --bien:#13703A; --bien-bg:#E3F3E8;
+  --mal:#B42318;  --mal-bg:#FBE7E5;
+  --r:14px;
+  --ease:cubic-bezier(0.23,1,0.32,1);
+  --sombra:0 1px 2px rgba(18,22,28,.06),0 8px 24px -8px rgba(18,22,28,.18);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:'Satoshi',ui-sans-serif,sans-serif;font-size:17px;line-height:1.5;color:var(--tinta);
+  background:var(--archivo);min-height:100dvh;overflow-x:hidden;
+  -webkit-tap-highlight-color:transparent;touch-action:manipulation;
+  background-image:repeating-linear-gradient(0deg,transparent 0 31px,rgba(18,22,28,.035) 31px 32px);
+}
+::selection{background:var(--sello);color:#fff}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none;touch-action:manipulation}
+:focus-visible{outline:3px solid var(--sello);outline-offset:3px;border-radius:6px}
+.num{font-variant-numeric:tabular-nums}
+.app{
+  max-width:520px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column;
+  padding:calc(env(safe-area-inset-top) + 16px) calc(env(safe-area-inset-right) + 18px) calc(env(safe-area-inset-bottom) + 18px) calc(env(safe-area-inset-left) + 18px);
+}
+.screen{display:none;flex:1;flex-direction:column}
+.screen.on{display:flex}
+h1,h2,.year,.big{font-family:'Cabinet Grotesk',sans-serif;letter-spacing:-.03em;line-height:.95}
+
+/* barra superior */
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px}
+.pill{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:15px;background:var(--ficha);border:1px solid var(--linea);border-radius:var(--r);padding:6px 12px}
+.pill i{font-size:18px;color:var(--grafito)}
+.streak{color:var(--sello)}
+
+/* botones */
+.btn{
+  display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:56px;
+  border-radius:var(--r);font-weight:700;font-size:18px;
+  background:var(--sello);color:#fff;box-shadow:0 1px 0 rgba(255,255,255,.2) inset,0 6px 16px -6px rgba(35,64,217,.55);
+  transition:transform 140ms var(--ease),background-color 160ms var(--ease);
+}
+.btn:active{transform:scale(.97)}
+.btn:disabled{background:#9AA3B0;box-shadow:none;cursor:default}
+.btn.ghost{background:var(--ficha);color:var(--tinta);border:1px solid var(--linea);box-shadow:none}
+@media (hover:hover){.btn:not(:disabled):hover{background:var(--sello-osc)}.btn.ghost:hover{background:#fff}}
+
+/* INICIO */
+#inicio{justify-content:space-between;gap:28px}
+.hero{margin-top:6vh}
+.hero h1{font-size:clamp(64px,22vw,112px);font-weight:800}
+.hero h1 .ch{display:inline-block}
+.hero p{margin-top:18px;color:var(--grafito);max-width:30ch;font-size:18px}
+.stack{display:flex;gap:10px;margin-top:22px;flex-wrap:wrap}
+.stack span{font-family:'Cabinet Grotesk';font-weight:700;font-size:15px;border:1px solid var(--linea);border-radius:var(--r);padding:4px 10px;background:var(--ficha)}
+.field label{display:block;font-weight:700;font-size:15px;margin-bottom:8px}
+.field input{
+  width:100%;min-height:54px;border-radius:var(--r);border:1px solid var(--linea);background:var(--ficha);
+  padding:0 16px;font-size:18px;caret-color:var(--sello);transition:border-color 160ms var(--ease)
+}
+.field input::placeholder{color:#6B7380}
+.field input:focus{outline:none;border-color:var(--sello);box-shadow:0 0 0 3px rgba(35,64,217,.18)}
+.foot{display:flex;flex-direction:column;gap:14px}
+.best{color:var(--grafito);font-size:15px;text-align:center}
+
+/* QUIZ */
+#quiz{gap:14px}
+.timer{height:8px;border-radius:99px;background:rgba(18,22,28,.1);overflow:hidden;margin-top:6px}
+.timer b{display:block;height:100%;background:var(--sello);transform-origin:left;border-radius:99px}
+.timer.low b{background:var(--mal)}
+.card{
+  background:var(--ficha);border:1px solid var(--linea);border-radius:var(--r);box-shadow:var(--sombra);
+  padding:20px 20px 22px;position:relative;overflow:hidden
+}
+.card::before{ /* perforación de ficha */
+  content:"";position:absolute;top:14px;right:16px;width:12px;height:12px;border-radius:50%;background:var(--archivo);box-shadow:inset 0 1px 2px rgba(0,0,0,.18)
+}
+.meta{font-weight:700;color:var(--grafito);font-size:15px}
+.year{font-size:clamp(76px,26vw,124px);font-weight:800;color:var(--tinta);margin:6px 0 10px;min-height:.95em}
+.year.none{display:none}
+.q{font-size:clamp(19px,5.2vw,22px);font-weight:700;line-height:1.3;text-wrap:balance}
+.opts{display:flex;flex-direction:column;gap:10px;margin-top:auto}
+.opt{
+  display:flex;align-items:center;gap:12px;width:100%;min-height:58px;text-align:left;
+  background:var(--ficha);border:1.5px solid var(--linea);border-radius:var(--r);padding:12px 14px;
+  font-size:17px;font-weight:500;line-height:1.3;
+  transition:transform 120ms var(--ease),border-color 160ms var(--ease),background-color 160ms var(--ease);
+}
+.opt:active{transform:scale(.97)}
+@media (hover:hover){.opt:not(:disabled):hover{border-color:var(--sello)}}
+.opt .k{flex:none;width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-family:'Cabinet Grotesk';font-weight:800;background:var(--archivo);font-size:16px}
+.opt .st{margin-left:auto;font-size:22px;flex:none}
+.opt.ok{background:var(--bien-bg);border-color:var(--bien);color:#0B3D20}
+.opt.ok .k{background:var(--bien);color:#fff}
+.opt.ko{background:var(--mal-bg);border-color:var(--mal);color:#5C110B}
+.opt.ko .k{background:var(--mal);color:#fff}
+.opt:disabled{cursor:default}
+.fb{min-height:26px;font-weight:700;display:flex;align-items:center;gap:8px}
+.fb.ok{color:var(--bien)} .fb.ko{color:var(--mal)}
+.fb i{font-size:20px}
+.gain{position:fixed;pointer-events:none;font-family:'Cabinet Grotesk';font-weight:800;font-size:28px;color:var(--sello);z-index:5}
+
+/* LÍNEA DEL TIEMPO */
+#linea{gap:14px}
+#linea h2{font-size:clamp(40px,12vw,58px);font-weight:800;margin-top:8px}
+#linea .sub{color:var(--grafito)}
+.tl{list-style:none;display:flex;flex-direction:column;gap:10px;position:relative;margin-top:4px}
+.hito{
+  display:flex;align-items:center;gap:12px;min-height:64px;padding:10px 12px 10px 14px;
+  background:var(--ficha);border:1.5px solid var(--linea);border-radius:var(--r);box-shadow:0 1px 2px rgba(18,22,28,.06);
+  user-select:none;-webkit-user-select:none;touch-action:none;position:relative;will-change:transform
+}
+.hito.drag{z-index:3;box-shadow:0 18px 36px -12px rgba(18,22,28,.35);border-color:var(--sello)}
+.hito .grip{font-size:24px;color:var(--grafito);flex:none}
+.hito .tx{flex:1;font-weight:700;line-height:1.25}
+.hito .tx small{display:block;font-weight:500;color:var(--grafito);font-size:15px}
+.hito .yr{font-family:'Cabinet Grotesk';font-weight:800;font-size:24px;display:none;flex:none}
+.hito .mv{display:flex;flex-direction:column;flex:none}
+.hito .mv button{width:44px;height:28px;display:grid;place-items:center;font-size:18px;color:var(--grafito);border-radius:8px}
+.hito .mv button:active{background:var(--archivo)}
+.hito.ok{border-color:var(--bien);background:var(--bien-bg)}
+.hito.ko{border-color:var(--mal);background:var(--mal-bg)}
+.hito.ok .yr,.hito.ko .yr{display:block}
+.pill[hidden]{display:none}
+@media (max-width:360px){.hito{gap:8px;padding:8px 6px 8px 10px}.hito .tx{font-size:16px}.hito .mv button{width:40px}}
+.tl.locked .mv,.tl.locked .grip{display:none}
+.tl.locked .hito{padding-left:16px;padding-right:16px}
+
+/* RESULTADO */
+#fin{justify-content:space-between;gap:20px}
+#fin .who{font-weight:700;color:var(--grafito);margin-top:6vh}
+#fin .big{font-size:clamp(96px,34vw,168px);font-weight:800}
+#fin .lbl{font-weight:700;font-size:18px}
+.rows{display:flex;flex-direction:column;border-top:1px solid var(--linea);margin-top:22px}
+.rows div{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--linea)}
+.rows dt{color:var(--grafito)} .rows dd{font-weight:700}
+.record{display:inline-flex;align-items:center;gap:6px;margin-top:12px;font-weight:700;color:var(--sello)}
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 24px);transform:translateX(-50%);background:var(--tinta);color:#fff;padding:10px 16px;border-radius:var(--r);font-weight:700;opacity:0;pointer-events:none;transition:opacity 200ms var(--ease)}
+.toast.on{opacity:1}
+
+@media (min-height:760px){.hero{margin-top:10vh}}
+@media (orientation:landscape) and (max-height:500px){
+  .year{font-size:64px}.hero{margin-top:0}.hero h1{font-size:64px}#fin .big{font-size:88px}
+}
+@media (prefers-reduced-motion:reduce){*{transition-duration:0ms!important}}
+</style>
+</head>
+<body>
+<main class="app">
+
+  <!-- INICIO -->
+  <section class="screen on" id="inicio" aria-labelledby="t1">
+    <div class="hero">
+      <h1 id="t1">Archivo IA</h1>
+      <p>Diez fichas sobre la historia de la inteligencia artificial. Tienes 10 segundos por pregunta y al final ordenas la línea del tiempo.</p>
+      <div class="stack" aria-hidden="true"><span>1950</span><span>1956</span><span>1997</span><span>2012</span><span>2016</span><span>2022</span></div>
+    </div>
+    <div class="foot">
+      <div class="field">
+        <label for="nombre">Tu nombre o apodo (opcional)</label>
+        <input id="nombre" maxlength="18" autocomplete="nickname" placeholder="Por ejemplo, Lucía 1.ºB">
+      </div>
+      <button class="btn" id="empezar"><i class="ph-bold ph-play"></i>Empezar</button>
+      <p class="best num" id="bestTxt"></p>
+    </div>
+  </section>
+
+  <!-- QUIZ -->
+  <section class="screen" id="quiz" aria-live="polite">
+    <div class="top">
+      <span class="pill num" id="prog"><i class="ph ph-cards"></i>1 de 10</span>
+      <span class="pill streak num" id="streak" hidden><i class="ph-bold ph-lightning"></i>x2</span>
+      <span class="pill num" id="score"><i class="ph ph-trophy"></i>0</span>
+    </div>
+    <div class="timer" id="timer" role="progressbar" aria-label="Tiempo restante"><b id="bar"></b></div>
+    <article class="card" id="card">
+      <p class="meta num" id="secs">10 s</p>
+      <div class="year num" id="year"></div>
+      <h2 class="q" id="qtext"></h2>
+    </article>
+    <p class="fb" id="fb"></p>
+    <div class="opts" id="opts"></div>
+  </section>
+
+  <!-- LÍNEA DEL TIEMPO -->
+  <section class="screen" id="linea">
+    <div class="top">
+      <span class="pill"><i class="ph ph-timer"></i><span class="num" id="tlTime">0 s</span></span>
+      <span class="pill num" id="score2"><i class="ph ph-trophy"></i>0</span>
+    </div>
+    <h2>Ordena la línea del tiempo</h2>
+    <p class="sub" id="tlSub">Arrastra cada hito a su sitio, del más antiguo al más reciente.</p>
+    <ol class="tl" id="tl"></ol>
+    <div class="foot" style="margin-top:auto">
+      <button class="btn" id="comprobar"><i class="ph-bold ph-check"></i>Comprobar orden</button>
+    </div>
+  </section>
+
+  <!-- RESULTADO -->
+  <section class="screen" id="fin">
+    <div>
+      <p class="who" id="who"></p>
+      <div class="big num" id="final">0</div>
+      <p class="lbl">puntos</p>
+      <span class="record" id="record" hidden><i class="ph-fill ph-star"></i>Nuevo récord en este móvil</span>
+      <dl class="rows">
+        <div><dt>Aciertos en el test</dt><dd class="num" id="rAc"></dd></div>
+        <div><dt>Línea del tiempo</dt><dd class="num" id="rTl"></dd></div>
+        <div><dt>Tiempo total</dt><dd class="num" id="rT"></dd></div>
+        <div><dt>Mejor racha</dt><dd class="num" id="rS"></dd></div>
+      </dl>
+    </div>
+    <div class="foot">
+      <button class="btn" id="otra"><i class="ph-bold ph-arrow-counter-clockwise"></i>Jugar otra vez</button>
+      <button class="btn ghost" id="compartir"><i class="ph ph-share-network"></i>Compartir resultado</button>
+    </div>
+  </section>
+</main>
+<div class="toast" id="toast" role="status"></div>
+
+<!-- Preguntas: Investigador (datos) + Redactor (preguntas) -->
+<script id="datos" type="application/json">
+[
+{"q":"¿Quién propuso en 1950 el «juego de la imitación», que luego se llamó test de Turing?","o":["John McCarthy","Alan Turing","Frank Rosenblatt","Joseph Weizenbaum"],"a":1,"year":1950},
+{"q":"¿En qué evento de 1956 se acuñó el término «inteligencia artificial»?","o":["La conferencia de Dartmouth","El informe Lighthill","El concurso ImageNet","La partida de Deep Blue"],"a":0,"year":1956},
+{"q":"¿Qué presentó Frank Rosenblatt, una de las primeras redes neuronales que aprendía a partir de ejemplos?","o":["ELIZA","El sistema R1","El perceptrón","AlexNet"],"a":2},
+{"q":"¿Qué era ELIZA, el programa que creó Joseph Weizenbaum a mediados de los años 60?","o":["Un programa de ajedrez","Un sistema experto para empresas","Una red para reconocer imágenes","Un programa que conversaba haciendo de psicoterapeuta"],"a":3},
+{"q":"¿Qué consecuencia tuvo el informe Lighthill de 1973 en el Reino Unido?","o":["Se recortó la financiación y llegó el primer «invierno de la IA»","Nació el término «inteligencia artificial»","Se creó el primer chatbot","Empezó la era del aprendizaje profundo"],"a":0,"year":1973},
+{"q":"¿Qué eran los sistemas expertos que se pusieron de moda en los años 80?","o":["Redes neuronales profundas","Programas basados en reglas que recogían el conocimiento de especialistas","Robots que jugaban al go","Chatbots como ChatGPT"],"a":1},
+{"q":"En 1997, Deep Blue, de IBM, ganó por 3,5 a 2,5 al campeón mundial de ajedrez. ¿Cómo se llamaba?","o":["Lee Sedol","Geoffrey Hinton","Garry Kasparov","Marvin Minsky"],"a":2,"year":1997},
+{"q":"¿Qué era empezó cuando la red AlexNet ganó el concurso ImageNet en 2012?","o":["La de los sistemas expertos","La del aprendizaje profundo","El primer invierno de la IA","La del test de Turing"],"a":1,"year":2012},
+{"q":"¿Qué programa de DeepMind ganó 4 a 1 al campeón de go Lee Sedol en 2016?","o":["Deep Blue","ELIZA","AlexNet","AlphaGo"],"a":3,"year":2016},
+{"q":"¿En qué arquitectura, presentada por Google en 2017, se basa ChatGPT, lanzado en 2022?","o":["Transformer","Perceptrón","Sistema experto","R1"],"a":0,"year":2022}
+]
+
+</script>
+<script id="hitos" type="application/json">
+[
+  {"y":1950,"t":"Turing propone el juego de la imitación","s":"Luego llamado test de Turing"},
+  {"y":1956,"t":"Conferencia de Dartmouth","s":"Se acuña «inteligencia artificial»"},
+  {"y":1997,"t":"Deep Blue gana a Kasparov","s":"IBM, ajedrez"},
+  {"y":2012,"t":"AlexNet gana ImageNet","s":"Empieza el aprendizaje profundo"},
+  {"y":2016,"t":"AlphaGo gana a Lee Sedol","s":"DeepMind, 4 a 1 en go"},
+  {"y":2022,"t":"Sale ChatGPT al público","s":"OpenAI"}
+]
+</script>
+
+<script type="module">
+import { animate, createTimeline, stagger, splitText, scrambleText, spring, utils } from 'https://cdn.jsdelivr.net/npm/animejs@4.5.0/+esm';
+
+const $ = s => document.querySelector(s);
+const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const EASE = 'out(4)';
+const PREGUNTAS = JSON.parse($('#datos').textContent);
+const HITOS = JSON.parse($('#hitos').textContent);
+const T = 10, BEST = 'archivoia-best';
+const st = { i:0, score:0, hits:0, streak:0, maxStreak:0, t0:0, tlOk:0, timer:null, left:T, locked:false };
+
+const show = id => {
+  document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === id));
+  window.scrollTo(0,0);
+};
+const toast = msg => { const t=$('#toast'); t.textContent=msg; t.classList.add('on'); setTimeout(()=>t.classList.remove('on'),1800); };
+const fmt = s => s < 60 ? `${s} s` : `${Math.floor(s/60)} min ${s%60} s`;
+const bumpScore = (el, from, to) => {
+  const o = {v:from};
+  animate(o, { v:to, duration: RM?0:500, ease:'out(3)', modifier:utils.round(0),
+    onUpdate: () => el.lastChild.textContent = o.v });
+};
+const setScore = (el, v) => { el.lastChild.textContent = v; };
+[$('#score'),$('#score2')].forEach(el => el.append(document.createTextNode('0')));
+$('#score').childNodes.forEach(n=>{ if(n.nodeType===3 && n!==$('#score').lastChild) n.remove(); });
+$('#score2').childNodes.forEach(n=>{ if(n.nodeType===3 && n!==$('#score2').lastChild) n.remove(); });
+
+/* INICIO */
+const best = +localStorage.getItem(BEST) || 0;
+$('#bestTxt').textContent = best ? `Récord en este móvil: ${best} puntos` : `${PREGUNTAS.length} preguntas y un minijuego final`;
+$('#nombre').value = localStorage.getItem('archivoia-nombre') || '';
+if (!RM) {
+  const { chars } = splitText('#t1', { chars: { wrap: 'clip' } });
+  animate(chars, { y: ['110%', '0%'], duration: 900, delay: stagger(25), ease: EASE });
+  animate('.stack span', { opacity:[0,1], y:[8,0], delay: stagger(60, {start:350}), duration:500, ease:EASE });
+}
+
+$('#empezar').addEventListener('click', () => {
+  localStorage.setItem('archivoia-nombre', $('#nombre').value.trim());
+  Object.assign(st, { i:0, score:0, hits:0, streak:0, maxStreak:0, tlOk:0, t0:performance.now() });
+  setScore($('#score'),0);
+  show('quiz'); pregunta();
+});
+
+/* QUIZ */
+function pregunta(){
+  const p = PREGUNTAS[st.i];
+  st.locked = false; st.left = T;
+  $('#prog').lastChild.textContent = `${st.i+1} de ${PREGUNTAS.length}`;
+  $('#fb').className='fb'; $('#fb').innerHTML='';
+  $('#qtext').textContent = p.q;
+  const y = $('#year');
+  if (p.year) { y.classList.remove('none'); y.textContent = p.year; if(!RM) scrambleIn(y, String(p.year)); }
+  else { y.classList.add('none'); y.textContent=''; }
+  const opts = $('#opts'); opts.innerHTML='';
+  p.o.forEach((txt, k) => {
+    const b = document.createElement('button');
+    b.className='opt'; b.innerHTML = `<span class="k">${'ABCD'[k]}</span><span class="t"></span><i class="st"></i>`;
+    b.querySelector('.t').textContent = txt;
+    b.addEventListener('click', () => responder(k, b));
+    opts.append(b);
+  });
+  if (!RM) {
+    animate('#card', { x:[40,0], opacity:[0,1], duration:320, ease:EASE });
+    animate('.opt', { y:[14,0], opacity:[0,1], delay:stagger(45,{start:80}), duration:300, ease:EASE });
+  }
+  arrancaTimer();
+}
+function scrambleIn(el, txt){
+  try { el.textContent = txt; animate(el, { innerHTML: scrambleText({ text: txt, chars:'0123456789', duration: 650 }), duration: 650 }); }
+  catch(e){ el.textContent = txt; }
+}
+function arrancaTimer(){
+  clearInterval(st.timer);
+  const bar = $('#bar'), tm = $('#timer'), start = performance.now();
+  tm.classList.remove('low'); bar.style.transform='scaleX(1)';
+  st.timer = setInterval(() => {
+    const el = (performance.now()-start)/1000;
+    st.left = Math.max(0, T - el);
+    bar.style.transform = `scaleX(${st.left/T})`;
+    $('#secs').textContent = `${Math.ceil(st.left)} s`;
+    tm.classList.toggle('low', st.left <= 3);
+    if (st.left <= 0) { clearInterval(st.timer); responder(-1, null); }
+  }, 50);
+}
+function responder(k, btn){
+  if (st.locked) return; st.locked = true; clearInterval(st.timer);
+  const p = PREGUNTAS[st.i], btns = [...document.querySelectorAll('.opt')];
+  btns.forEach(b => b.disabled = true);
+  const good = btns[p.a]; good.classList.add('ok'); good.querySelector('.st').className='st ph-bold ph-check-circle';
+  const fb = $('#fb');
+  if (k === p.a) {
+    st.hits++; st.streak++; st.maxStreak = Math.max(st.maxStreak, st.streak);
+    const mult = st.streak >= 5 ? 3 : st.streak >= 3 ? 2 : 1;
+    const pts = (100 + Math.round(st.left*10)) * mult;
+    const prev = st.score; st.score += pts;
+    bumpScore($('#score'), prev, st.score);
+    fb.className='fb ok'; fb.innerHTML = `<i class="ph-bold ph-check-circle"></i>Correcto. +${pts}${mult>1?` (racha x${mult})`:''}`;
+    if (!RM) animate(good, { scale:[0.96,1], ease: spring({ bounce: .3 }) });
+    flotar(`+${pts}`, good);
+    if (st.streak === 5 && window.confetti) confetti({ particleCount:60, spread:60, origin:{y:.8}, colors:['#2340D9','#12161C','#FBFBFA'] });
+  } else {
+    st.streak = 0;
+    if (btn) { btn.classList.add('ko'); btn.querySelector('.st').className='st ph-bold ph-x-circle'; if(!RM) animate(btn,{ x:[0,-8,8,-5,5,0], duration:300, ease:'out(2)' }); }
+    navigator.vibrate?.(30);
+    fb.className='fb ko';
+    const sol = p.o[p.a];
+    fb.innerHTML = `<i class="ph-bold ph-x-circle"></i>${btn ? 'No es esa.' : 'Se acabó el tiempo.'} ${sol.length>34 ? 'La correcta está en verde.' : 'Era «'+esc(sol)+'».'}`;
+  }
+  const s = $('#streak');
+  if (st.streak >= 3) { s.hidden=false; s.lastChild.textContent = st.streak>=5?'x3':'x2'; } else s.hidden = true;
+  setTimeout(() => {
+    st.i++;
+    if (st.i < PREGUNTAS.length) {
+      if (RM) return pregunta();
+      animate('#card', { x:[0,-40], opacity:[1,0], duration:220, ease:'in(2)', onComplete: pregunta });
+    } else lineaTiempo();
+  }, 1700);
+}
+const esc = s => s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function flotar(txt, el){
+  if (RM) return;
+  const r = el.getBoundingClientRect(), g = document.createElement('span');
+  g.className='gain'; g.textContent = txt; g.style.left = (r.right-90)+'px'; g.style.top = (r.top-6)+'px';
+  document.body.append(g);
+  animate(g, { y:[0,-46], opacity:[1,0], duration:800, ease:'out(3)', onComplete:()=>g.remove() });
+}
+const s0 = $('#streak'); s0.append(document.createTextNode('')); s0.childNodes.forEach(n=>{ if(n.nodeType===3 && n!==s0.lastChild) n.remove(); });
+const p0 = $('#prog'); p0.childNodes.forEach(n=>{ if(n.nodeType===3 && n!==p0.lastChild) n.remove(); });
+
+/* LÍNEA DEL TIEMPO */
+let tlStart = 0, tlTick = null;
+function lineaTiempo(){
+  show('linea');
+  setScore($('#score2'), st.score);
+  const tl = $('#tl'); tl.innerHTML=''; tl.classList.remove('locked');
+  $('#comprobar').disabled = false; $('#comprobar').innerHTML = '<i class="ph-bold ph-check"></i>Comprobar orden';
+  $('#tlSub').textContent = 'Arrastra cada hito a su sitio, del más antiguo al más reciente.';
+  let orden = [...HITOS];
+  do { orden.sort(() => Math.random()-.5); } while (orden.every((h,i)=>h.y===HITOS[i].y));
+  orden.forEach(h => {
+    const li = document.createElement('li'); li.className='hito'; li.dataset.y = h.y;
+    li.innerHTML = `<i class="grip ph ph-dots-six-vertical" aria-hidden="true"></i><span class="tx"></span><span class="yr num">${h.y}</span>
+      <span class="mv"><button aria-label="Subir"><i class="ph-bold ph-caret-up"></i></button><button aria-label="Bajar"><i class="ph-bold ph-caret-down"></i></button></span>`;
+    li.querySelector('.tx').innerHTML = `${esc(h.t)}<small>${esc(h.s)}</small>`;
+    const [up, down] = li.querySelectorAll('.mv button');
+    up.addEventListener('click', () => mover(li, -1));
+    down.addEventListener('click', () => mover(li, 1));
+    li.addEventListener('pointerdown', e => { if (!e.target.closest('.mv')) arrastrar(e, li); });
+    tl.append(li);
+  });
+  if (!RM) animate('.hito', { x:[-24,0], opacity:[0,1], delay:stagger(60), duration:360, ease:EASE });
+  tlStart = performance.now(); clearInterval(tlTick);
+  tlTick = setInterval(()=> $('#tlTime').textContent = fmt(Math.floor((performance.now()-tlStart)/1000)), 250);
+}
+function flip(fn){ // anima el reordenado (FLIP)
+  const items = [...$('#tl').children], first = new Map(items.map(el=>[el, el.getBoundingClientRect().top]));
+  fn();
+  items.forEach(el => { const d = first.get(el) - el.getBoundingClientRect().top; if (d && !el.classList.contains('drag') && !RM) animate(el, { y:[d,0], ease: spring({ bounce:.25, duration:350 }) }); });
+}
+function mover(li, dir){
+  if ($('#tl').classList.contains('locked')) return;
+  flip(() => { if (dir<0 && li.previousElementSibling) li.parentNode.insertBefore(li, li.previousElementSibling);
+               if (dir>0 && li.nextElementSibling) li.parentNode.insertBefore(li.nextElementSibling, li); });
+  li.querySelector(dir<0?'.mv button':'.mv button:last-child').focus();
+}
+function arrastrar(e, li){
+  const tl = $('#tl'); if (tl.classList.contains('locked')) return;
+  e.preventDefault(); li.setPointerCapture(e.pointerId);
+  li.classList.add('drag');
+  let startY = e.clientY, offset = 0;
+  if (!RM) animate(li, { scale:1.03, duration:160, ease:EASE });
+  const onMove = ev => {
+    offset = ev.clientY - startY;
+    li.style.transform = `translateY(${offset}px) scale(1.03)`;
+    const r = li.getBoundingClientRect(), mid = r.top + r.height/2;
+    const prev = li.previousElementSibling, next = li.nextElementSibling;
+    if (prev && mid < prev.getBoundingClientRect().top + prev.offsetHeight/2) {
+      const before = li.getBoundingClientRect().top - offset; flip(()=>tl.insertBefore(li, prev));
+      const after = li.getBoundingClientRect().top - offset; startY += (after-before); offset = ev.clientY - startY; li.style.transform=`translateY(${offset}px) scale(1.03)`;
+    } else if (next && mid > next.getBoundingClientRect().top + next.offsetHeight/2) {
+      const before = li.getBoundingClientRect().top - offset; flip(()=>tl.insertBefore(next, li));
+      const after = li.getBoundingClientRect().top - offset; startY += (after-before); offset = ev.clientY - startY; li.style.transform=`translateY(${offset}px) scale(1.03)`;
+    }
+  };
+  const onUp = () => {
+    li.removeEventListener('pointermove', onMove); li.removeEventListener('pointerup', onUp); li.removeEventListener('pointercancel', onUp);
+    li.classList.remove('drag');
+    if (RM) { li.style.transform=''; return; }
+    animate(li, { y:[offset,0], scale:[1.03,1], ease: spring({ bounce:.35, duration:400 }), onComplete:()=>li.style.transform='' });
+  };
+  li.addEventListener('pointermove', onMove); li.addEventListener('pointerup', onUp); li.addEventListener('pointercancel', onUp);
+}
+$('#comprobar').addEventListener('click', () => {
+  const tl = $('#tl'); if (tl.classList.contains('locked')) return fin();
+  clearInterval(tlTick);
+  const secs = (performance.now()-tlStart)/1000;
+  const items = [...tl.children]; let ok = 0;
+  items.forEach((li, i) => { const g = +li.dataset.y === HITOS[i].y; li.classList.add(g?'ok':'ko'); if (g) ok++; });
+  tl.classList.add('locked');
+  if (!RM) animate('.hito .yr', { opacity:[0,1], x:[10,0], delay:stagger(70), duration:300, ease:EASE });
+  st.tlOk = ok;
+  const pts = ok*60 + (ok===HITOS.length ? Math.max(0, Math.round(200 - secs*5)) : 0);
+  const prev = st.score; st.score += pts; bumpScore($('#score2'), prev, st.score);
+  $('#tlSub').textContent = ok===HITOS.length ? `Perfecto. +${pts} puntos.` : `${ok} de ${HITOS.length} en su sitio. +${pts} puntos. Así queda el orden correcto.`;
+  if (ok === HITOS.length) { /* orden correcto: animación de verificación */ }
+  else { // reordena al correcto tras un momento
+    setTimeout(()=> flip(()=> HITOS.forEach(h => tl.append(tl.querySelector(`[data-y="${h.y}"]`)))), 900);
+  }
+  $('#comprobar').innerHTML = '<i class="ph-bold ph-flag-checkered"></i>Ver resultado';
+});
+
+/* RESULTADO */
+function fin(){
+  show('fin');
+  const total = Math.round((performance.now()-st.t0)/1000);
+  const nombre = $('#nombre').value.trim();
+  $('#who').textContent = nombre ? `${nombre}, has conseguido` : 'Has conseguido';
+  $('#rAc').textContent = `${st.hits} de ${PREGUNTAS.length}`;
+  $('#rTl').textContent = `${st.tlOk} de ${HITOS.length}`;
+  $('#rT').textContent = fmt(total);
+  $('#rS').textContent = st.maxStreak;
+  const prevBest = +localStorage.getItem(BEST) || 0;
+  $('#record').hidden = !(st.score > prevBest);
+  if (st.score > prevBest) localStorage.setItem(BEST, st.score);
+  const o = {v:0};
+  animate(o, { v:st.score, duration: RM?0:1400, ease:'out(4)', modifier:utils.round(0), onUpdate:()=> $('#final').textContent = o.v });
+  if (!RM) animate('.rows div', { opacity:[0,1], y:[10,0], delay:stagger(70,{start:500}), duration:360, ease:EASE });
+  if (window.confetti && !RM) setTimeout(()=>{
+    const c = ['#2340D9','#12161C','#FBFBFA','#13703A'];
+    confetti({ particleCount:90, spread:75, origin:{x:.25,y:.7}, angle:60, colors:c });
+    confetti({ particleCount:90, spread:75, origin:{x:.75,y:.7}, angle:120, colors:c });
+  }, 900);
+  st.total = total;
+}
+$('#otra').addEventListener('click', () => { show('inicio'); $('#bestTxt').textContent = `Récord en este móvil: ${localStorage.getItem(BEST)||0} puntos`; });
+$('#compartir').addEventListener('click', async () => {
+  const n = $('#nombre').value.trim();
+  const txt = `${n?n+': ':''}${st.score} puntos en Archivo IA. ${st.hits}/${PREGUNTAS.length} en el test y ${st.tlOk}/${HITOS.length} en la línea del tiempo. ${location.href}`;
+  try { if (navigator.share) await navigator.share({ title:'Archivo IA', text:txt }); else { await navigator.clipboard.writeText(txt); toast('Resultado copiado'); } }
+  catch(e){ if (e.name!=='AbortError') { try{ await navigator.clipboard.writeText(txt); toast('Resultado copiado'); }catch(_){ toast('No se ha podido compartir'); } } }
+});
+</script>
+</body>
+</html>
